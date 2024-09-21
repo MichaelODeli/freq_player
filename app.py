@@ -1,13 +1,13 @@
+import threading
+
 import dash
-from dash import dcc, html, Output, Input, State, no_update
 import dash_mantine_components as dmc
-import styles
 import flask
-import webbrowser
-from threading import Timer
-import os
+from dash import Input, Output, State, dcc, html, no_update
 from dash_iconify import DashIconify
 
+import styles
+from freq_maker import play_tone_versh
 
 dash._dash_renderer._set_react_version("18.2.0")
 
@@ -60,7 +60,7 @@ app.layout = dmc.MantineProvider(
                             ),
                             dmc.NavLink(
                                 label='Режим "Прием"',
-                                description='Отпустить тангенту',
+                                description="Отпустить тангенту",
                                 id="freq-priem",
                                 leftSection=get_icon(
                                     icon="material-symbols:call-received"
@@ -68,7 +68,7 @@ app.layout = dmc.MantineProvider(
                             ),
                             dmc.NavLink(
                                 label='Режим "Передача"',
-                                description='Нажать тангенту',
+                                description="Нажать тангенту",
                                 id="freq-pered",
                                 leftSection=get_icon(icon="material-symbols:call-made"),
                             ),
@@ -76,7 +76,7 @@ app.layout = dmc.MantineProvider(
                                 label='Вызов "ЛОК"',
                                 id="freq-call-loc",
                                 leftSection=get_icon(icon="solar:call-cancel-outline"),
-                                disabled=True
+                                disabled=True,
                             ),
                             dmc.NavLink(
                                 label="Отбой",
@@ -137,7 +137,7 @@ app.layout = dmc.MantineProvider(
                                 disabled=True,
                             ),
                             dmc.Button("Воспроизвести", id="freq-play", fullWidth=True),
-                            html.Div(id='play-results')
+                            html.Div(id="play-results"),
                         ],
                         px="sm",
                         pt="sm",
@@ -248,23 +248,32 @@ def clear_values(n_clicks):
 
 
 @app.callback(
-    Output('play-results', 'children'),
-    Input('freq-play', 'n_clicks'),
+    Output("play-results", "children"),
+    Input("freq-play", "n_clicks"),
     State("freq-1", "value"),
     State("freq-2", "value"),
     State("time-1", "value"),
     State("time-2", "value"),
-    prevent_initial_call = True
+    prevent_initial_call=True,
 )
 def play_sound(n_clicks, freq_1, freq_2, time_1, time_2):
+    time_1 = time_1 / 1000
+    time_2 = time_2 / 1000
+
+    freq_lst = [[freq_1, time_1], [freq_2, time_2]]
+
+    # play_tone(freq_lst)
+    threading.Thread(target=play_tone_versh, args=([freq_lst])).start()
+
     return dmc.Group(
         [
-            'Воспроизведено',
-            dcc.Markdown(f'$f_1 = {freq_1}\, Гц$', mathjax=True),
-            'и',
-            dcc.Markdown(f'$f_2 = {freq_2}\, Гц$', mathjax=True)
+            "Воспроизведено",
+            dcc.Markdown(f"$f_1 = {freq_1}\\, Гц$", mathjax=True),
+            "и",
+            dcc.Markdown(f"$f_2 = {freq_2}\\, Гц$", mathjax=True),
         ]
     )
+
 
 # def open_browser():
 #     if not os.environ.get("WERKZEUG_RUN_MAIN"):
