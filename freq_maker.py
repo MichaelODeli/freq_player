@@ -4,15 +4,23 @@ import sounddevice as sd
 
 SAMPLE_RATE = 44100  # дискретизация
 
-def play_tones(frequency_duration_list, sample_rate=SAMPLE_RATE):
-    """
-    Воспроизводит звуки указанных частот и длительности последовательно без пауз.
 
-    :param frequency_duration_list: список формата [[frequency, duration], ...], 
-    :param sample_rate: частота дискретизации (по умолчанию 44100 Гц).
-    :return sound:
+def generate_tone(
+    frequency_duration_list, sample_rate=SAMPLE_RATE, return_separated_list=False
+):
+    """Generate tone by freq and time
+
+    Args:
+        frequency_duration_list (list): [frequency, duration]
+        sample_rate (int, optional): Play sample rate. Defaults to SAMPLE_RATE.
+
+    Returns:
+        np.array: array with sound
     """
-    full_wave = np.array([])  # Пустой массив для объединения всех волн
+    if return_separated_list:
+        full_wave = []
+    else:
+        full_wave = np.array([])  # Пустой массив для объединения всех волн
 
     for frequency, duration in frequency_duration_list:
         # Генерация звуковой волны для каждой частоты
@@ -20,8 +28,20 @@ def play_tones(frequency_duration_list, sample_rate=SAMPLE_RATE):
         wave = np.sin(2 * np.pi * frequency * t)
 
         # Объединяем звуки в один массив
-        full_wave = np.concatenate((full_wave, wave))
-    
-    # Воспроизведение объединённой звуковой волны
+        if return_separated_list:
+            full_wave.append(list(wave))
+        else:
+            full_wave = np.concatenate((full_wave, wave))
+
+    return full_wave
+
+
+def play_tone(full_wave, sample_rate=SAMPLE_RATE):
+    """Play tone from np.array
+
+    Args:
+        full_wave (np.array):
+        sample_rate (int, optional): Play sample rate. Defaults to SAMPLE_RATE.
+    """
     sd.play(full_wave, samplerate=sample_rate)
     sd.wait()  # Ожидание завершения воспроизведения

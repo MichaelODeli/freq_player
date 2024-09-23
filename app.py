@@ -3,11 +3,13 @@ import threading
 import dash
 import dash_mantine_components as dmc
 import flask
+import plotly.graph_objects as go
 from dash import Input, Output, State, dcc, html, no_update
 from dash_iconify import DashIconify
 
 import styles
-from freq_maker import play_tones
+import freq_maker
+import freq_drawer
 
 dash._dash_renderer._set_react_version("18.2.0")
 
@@ -123,61 +125,69 @@ app.layout = dmc.MantineProvider(
                                 ],
                             ),
                         ],
-                        # align="center",
-                        # pt="sm",
-                        # gap=0,
                     ),
                 ),
                 dmc.AppShellMain(
                     dmc.Stack(
                         [
-                            dmc.Group(
+                            dmc.Stack(
                                 [
-                                    dmc.Select(
-                                        label="Номер частоты 1",
-                                        data=[str(i) for i in freq_list.keys()],
-                                        w=150,
-                                        id="freq-select-1",
-                                        clearable=True,
+                                    dmc.Group(
+                                        [
+                                            dmc.Select(
+                                                label="Номер частоты 1",
+                                                data=[str(i) for i in freq_list.keys()],
+                                                w=150,
+                                                id="freq-select-1",
+                                                clearable=True,
+                                            ),
+                                            dmc.NumberInput(
+                                                label="Частота 1, Гц", id="freq-1"
+                                            ),
+                                            dmc.NumberInput(
+                                                label="Время подачи, мс",
+                                                id="time-1",
+                                            ),
+                                        ]
                                     ),
-                                    dmc.NumberInput(label="Частота 1, Гц", id="freq-1"),
-                                    dmc.NumberInput(
-                                        label="Время подачи, мс",
-                                        id="time-1",
+                                    dmc.Group(
+                                        [
+                                            dmc.Select(
+                                                label="Номер частоты 2",
+                                                data=[str(i) for i in freq_list.keys()],
+                                                w=150,
+                                                id="freq-select-2",
+                                                clearable=True,
+                                            ),
+                                            dmc.NumberInput(
+                                                label="Частота 2, Гц", id="freq-2"
+                                            ),
+                                            dmc.NumberInput(
+                                                label="Время подачи, мс", id="time-2"
+                                            ),
+                                        ]
                                     ),
-                                ]
+                                    dmc.Switch(
+                                        size="md",
+                                        radius="lg",
+                                        label="Автовоспроизведение частоты при нажатии параметра",
+                                        checked=False,
+                                        id="freq-autoplay",
+                                        disabled=True,
+                                    ),
+                                    dmc.Button(
+                                        "Воспроизвести", id="freq-play", fullWidth=True
+                                    ),
+                                    html.Div(id="play-results"),
+                                ],
+                                px="sm",
+                                pt="sm",
+                                w="max-content",
+                                gap="lg",
                             ),
-                            dmc.Group(
-                                [
-                                    dmc.Select(
-                                        label="Номер частоты 2",
-                                        data=[str(i) for i in freq_list.keys()],
-                                        w=150,
-                                        id="freq-select-2",
-                                        clearable=True,
-                                    ),
-                                    dmc.NumberInput(label="Частота 2, Гц", id="freq-2"),
-                                    dmc.NumberInput(
-                                        label="Время подачи, мс", id="time-2"
-                                    ),
-                                ]
-                            ),
-                            dmc.Switch(
-                                size="md",
-                                radius="lg",
-                                label="Автовоспроизведение частоты при нажатии параметра",
-                                checked=False,
-                                id="freq-autoplay",
-                                disabled=True,
-                            ),
-                            dmc.Button("Воспроизвести", id="freq-play", fullWidth=True),
-                            html.Div(id="play-results"),
-                        ],
-                        px="sm",
-                        pt="sm",
-                        w="max-content",
-                        gap="lg",
-                    ),
+                            html.Div(id="play-results", style={"width": "1500px"}),
+                        ]
+                    )
                 ),
             ],
             navbar={
@@ -197,6 +207,16 @@ app.layout = dmc.MantineProvider(
         "colors": styles.COLORS,
     },
 )
+
+
+@app.callback(
+    Output("time-1", "value", allow_duplicate=True),
+    Output("time-2", "value", allow_duplicate=True),
+    Input("freq-phone-set_time", "n_clicks"),
+    prevent_initial_call=True,
+)
+def set_freq_phone(n_clicks):
+    return ["1000"] * 2 if n_clicks is not None else [no_update] * 2
 
 
 @app.callback(
@@ -268,6 +288,7 @@ def set_freq_2_by_num(value):
 @app.callback(
     Output("freq-select-1", "value"),
     Output("freq-select-2", "value"),
+    Output("play-results", "children", allow_duplicate=True),
     Output("freq-1", "value"),
     Output("freq-2", "value"),
     Output("time-1", "value"),
@@ -276,7 +297,7 @@ def set_freq_2_by_num(value):
     prevent_initial_call=True,
 )
 def clear_values(n_clicks):
-    return [None] * 2 + [""] * 4
+    return [None] * 3 + [""] * 4
 
 
 @app.callback(
@@ -294,17 +315,12 @@ def play_sound(n_clicks, freq_1, freq_2, time_1, time_2):
 
     freq_lst = [[freq_1, time_1], [freq_2, time_2]]
 
-    # play_tone(freq_lst)
-    threading.Thread(target=play_tones, args=([freq_lst])).start()
+    full_wave = freq_maker.generate_tone(freq_lst)
+    threading.Thread(target=freq_maker.play_tone, args=([full_wave])).start()
 
-    return dmc.Group(
-        [
-            "Воспроизведено",
-            dcc.Markdown(f"$f_1 = {freq_1}\\, Гц$", mathjax=True),
-            "и",
-            dcc.Markdown(f"$f_2 = {freq_2}\\, Гц$", mathjax=True),
-        ]
-    )
+    fig = freq_drawer.get_fig(freq_lst, full_wave)
+
+    return dcc.Graph(figure=fig)
 
 
 # def open_browser():
