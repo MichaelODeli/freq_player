@@ -11,6 +11,7 @@ from dash_iconify import DashIconify
 import freq_drawer
 import freq_maker
 import styles
+from views import fields
 
 dash._dash_renderer._set_react_version("18.2.0")
 
@@ -69,33 +70,25 @@ app.layout = dmc.MantineProvider(
                     children=html.Div(
                         [
                             dmc.NavLink(
-                                label="Основные операции",
-                                opened=True,
-                                children=[
-                                    dmc.NavLink(
-                                        label="Очистить",
-                                        id="freq-clear",
-                                        leftSection=get_icon(icon="mdi:clear"),
-                                    ),
-                                ],
-                            ),
-                            dmc.NavLink(
                                 label="Работа с телефоном",
                                 opened=True,
+                                leftSection=get_icon(icon="material-symbols:call"),
                                 children=[
                                     dmc.NavLink(
-                                        label="Настроить время",
-                                        description="Время подачи - 1 с",
+                                        label="Настроить время подачи сигнала",
+                                        description="t = 1 с",
                                         id="freq-phone-set_time",
                                         leftSection=get_icon(
                                             icon="mdi:clock-time-two-outline"
                                         ),
+                                        style={"line-height": "1.3"},
                                     ),
                                 ],
                             ),
                             dmc.NavLink(
                                 label="Работа с РС-46МЦ",
                                 opened=True,
+                                leftSection=get_icon(icon="carbon:radio"),
                                 children=[
                                     dmc.NavLink(
                                         label="Режим разговора",
@@ -103,6 +96,7 @@ app.layout = dmc.MantineProvider(
                                         leftSection=get_icon(
                                             icon="material-symbols:call"
                                         ),
+                                        description='Проверьте, что включен пункт "Автоматическое воспроизведение"',
                                     ),
                                     # dmc.NavLink(
                                     #     label='Вызов "ЛОК"',
@@ -118,6 +112,7 @@ app.layout = dmc.MantineProvider(
                                         leftSection=get_icon(
                                             icon="solar:call-cancel-outline"
                                         ),
+                                        description="Отмена текущего вызова",
                                     ),
                                     dmc.NavLink(
                                         label="Контроль",
@@ -125,86 +120,152 @@ app.layout = dmc.MantineProvider(
                                         leftSection=get_icon(
                                             icon="mdi:user-access-control"
                                         ),
+                                        description="Проверка соединения",
                                     ),
                                 ],
+                            ),
+                            dmc.NavLink(
+                                label="Очистить данные",
+                                id="freq-clear",
+                                leftSection=get_icon(icon="ant-design:clear-outlined"),
+                                description="Очистка всех полей ввода",
                             ),
                         ],
                     ),
                 ),
                 dmc.AppShellMain(
-                    dmc.Stack(
-                        [
-                            dmc.Stack(
+                    dmc.Accordion(
+                        multiple=True,
+                        value=[
+                            "data_input",
+                        ],
+                        children=[
+                            dmc.AccordionItem(
                                 [
-                                    dmc.Group(
-                                        [
-                                            dmc.Select(
-                                                label="Номер частоты 1",
-                                                data=[str(i) for i in FREQ_LIST.keys()],
-                                                w=150,
-                                                id="freq-select-1",
-                                                clearable=True,
-                                            ),
-                                            dmc.NumberInput(
-                                                label="Частота 1, Гц", id="freq-1"
-                                            ),
-                                            dmc.NumberInput(
-                                                label="Время подачи, мс",
-                                                id="time-1",
-                                            ),
-                                        ]
+                                    dmc.AccordionControl(
+                                        "Информация по подключению",
+                                        icon=get_icon("material-symbols:help-outline"),
                                     ),
-                                    dmc.Group(
-                                        [
-                                            dmc.Select(
-                                                label="Номер частоты 2",
-                                                data=[str(i) for i in FREQ_LIST.keys()],
-                                                w=150,
-                                                id="freq-select-2",
-                                                clearable=True,
-                                            ),
-                                            dmc.NumberInput(
-                                                label="Частота 2, Гц", id="freq-2"
-                                            ),
-                                            dmc.NumberInput(
-                                                label="Время подачи, мс", id="time-2"
-                                            ),
-                                        ]
+                                    dmc.AccordionPanel("some content"),
+                                ],
+                                value="help",
+                            ),
+                            dmc.AccordionItem(
+                                [
+                                    dmc.AccordionControl(
+                                        "Ввод данных", icon=get_icon("ri:input-field")
                                     ),
-                                    dmc.Switch(
-                                        size="md",
-                                        radius="lg",
-                                        label="Автовоспроизведение",
-                                        checked=False,
-                                        id="freq-autoplay",
-                                    ),
-                                    dmc.Button(
-                                        "Воспроизвести", id="freq-play", fullWidth=True
-                                    ),
-                                    dmc.Group(
-                                        id="freq-speak-modes",
-                                        children=[
-                                            dmc.Button(
-                                                "Нажать тангенту", id="freq-tx", w="40%"
-                                            ),
-                                            dmc.Button(
-                                                "Отпустить тангенту",
-                                                id="freq-rx",
-                                                w="40%",
-                                            ),
-                                        ],
-                                        display="none",
-                                        justify="space-between",
+                                    dmc.AccordionPanel(
+                                        dmc.Stack(
+                                            [
+                                                fields.render_freq_1_fields(FREQ_LIST),
+                                                fields.render_freq_2_fields(FREQ_LIST),
+                                            ]
+                                            + fields.render_freq_buttons(),
+                                            px="sm",
+                                            pt="sm",
+                                            w="max-content",
+                                            gap="lg",
+                                        ),
                                     ),
                                 ],
-                                px="sm",
-                                pt="sm",
-                                w="max-content",
-                                gap="lg",
+                                value="data_input",
                             ),
-                            html.Div(id="play-results", style={"width": "1500px"}),
-                        ]
-                    )
+                            dmc.AccordionItem(
+                                [
+                                    dmc.AccordionControl(
+                                        "График сигнала",
+                                        icon=get_icon(
+                                            "streamline:interface-signal-graph-heart-line-beat-square-graph-stats"
+                                        ),
+                                    ),
+                                    dmc.AccordionPanel(
+                                        html.Div(
+                                            id="play-results",
+                                            style={"width": "1500px"},
+                                            children=[
+                                                'График отобразится после нажатия кнопки "Воспроизвести"'
+                                            ],
+                                        )
+                                    ),
+                                ],
+                                value="graph",
+                            ),
+                        ],
+                    ),
+                    # dmc.Stack(
+                    #     [
+                    #         dmc.Stack(
+                    #             [
+                    #                 dmc.Group(
+                    #                     [
+                    #                         dmc.Select(
+                    #                             label="Номер частоты 1",
+                    #                             data=[str(i) for i in FREQ_LIST.keys()],
+                    #                             w=150,
+                    #                             id="freq-select-1",
+                    #                             clearable=True,
+                    #                         ),
+                    #                         dmc.NumberInput(
+                    #                             label="Частота 1, Гц", id="freq-1"
+                    #                         ),
+                    #                         dmc.NumberInput(
+                    #                             label="Время подачи, мс",
+                    #                             id="time-1",
+                    #                         ),
+                    #                     ]
+                    #                 ),
+                    #                 dmc.Group(
+                    #                     [
+                    #                         dmc.Select(
+                    #                             label="Номер частоты 2",
+                    #                             data=[str(i) for i in FREQ_LIST.keys()],
+                    #                             w=150,
+                    #                             id="freq-select-2",
+                    #                             clearable=True,
+                    #                         ),
+                    #                         dmc.NumberInput(
+                    #                             label="Частота 2, Гц", id="freq-2"
+                    #                         ),
+                    #                         dmc.NumberInput(
+                    #                             label="Время подачи, мс", id="time-2"
+                    #                         ),
+                    #                     ]
+                    #                 ),
+                    #                 dmc.Switch(
+                    #                     size="md",
+                    #                     radius="lg",
+                    #                     label="Автовоспроизведение",
+                    #                     checked=True,
+                    #                     id="freq-autoplay",
+                    #                 ),
+                    #                 dmc.Button(
+                    #                     "Воспроизвести", id="freq-play", fullWidth=True
+                    #                 ),
+                    #                 dmc.Group(
+                    #                     id="freq-speak-modes",
+                    #                     children=[
+                    #                         dmc.Button(
+                    #                             "Нажать тангенту", id="freq-tx", w="40%"
+                    #                         ),
+                    #                         dmc.Button(
+                    #                             "Отпустить тангенту",
+                    #                             id="freq-rx",
+                    #                             w="40%",
+                    #                         ),
+                    #                     ],
+                    #                     display="none",
+                    #                     justify="space-between",
+                    #                 ),
+                    #             ],
+                    #             px="sm",
+                    #             pt="sm",
+                    #             w="max-content",
+                    #             gap="lg",
+                    #         ),
+                    #         html.Div(id="play-results", style={"width": "1500px"}),
+                    #     ]
+                    # ),
                 ),
             ],
             navbar={
