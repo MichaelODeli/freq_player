@@ -7,7 +7,7 @@ from dash import Input, Output, State, dcc, html, no_update
 from dash_iconify import DashIconify
 
 import styles
-from freq_maker import play_tone_versh
+from freq_maker import play_tones
 
 dash._dash_renderer._set_react_version("18.2.0")
 
@@ -220,7 +220,7 @@ def set_freq_send(n_clicks):
     prevent_initial_call=True,
 )
 def set_freq_1_by_num(value):
-    return [freq_list[int(value)], 250] if value not in [None, "", 0] else ["", ""]
+    return [freq_list[int(value)], 1000] if value not in [None, "", 0] else ["", ""]
 
 
 @app.callback(
@@ -230,7 +230,7 @@ def set_freq_1_by_num(value):
     prevent_initial_call=True,
 )
 def set_freq_2_by_num(value):
-    return [freq_list[int(value)], 250] if value not in [None, "", 0] else ["", ""]
+    return [freq_list[int(value)], 1000] if value not in [None, "", 0] else ["", ""]
 
 
 @app.callback(
@@ -263,7 +263,7 @@ def play_sound(n_clicks, freq_1, freq_2, time_1, time_2):
     freq_lst = [[freq_1, time_1], [freq_2, time_2]]
 
     # play_tone(freq_lst)
-    threading.Thread(target=play_tone_versh, args=([freq_lst])).start()
+    threading.Thread(target=play_tones, args=([freq_lst])).start()
 
     return dmc.Group(
         [
