@@ -9,7 +9,7 @@ from dash.exceptions import PreventUpdate
 from dash_iconify import DashIconify
 
 import views.styles as styles
-from models import freq_drawer, freq_maker
+from controllers import freq_drawer, freq_player
 from views import fields
 
 dash._dash_renderer._set_react_version("18.2.0")
@@ -48,15 +48,6 @@ FREQ_LIST = {
 PHONE_PLAY_TIME = 1000
 CANCEL_CONTROL_TIME = 250
 LISTEN_SEND_TIME = 100
-
-
-def play(freq_1, freq_2, time_1, time_2, return_vals=False):
-    freq_lst = [[freq_1, time_1 / 1000], [freq_2, time_2 / 1000]]
-    full_wave = freq_maker.generate_tone(freq_lst)
-    threading.Thread(target=freq_maker.play_tone, args=([full_wave])).start()
-
-    if return_vals:
-        return freq_lst, full_wave
 
 
 # Конструкция всего макета
@@ -375,7 +366,9 @@ def set_specify_freq(n0, n1, n2, n3, n4, n5, n6, autoplay):
             raise PreventUpdate
 
         if autoplay:
-            play(FREQ_LIST[freq_ids[0]], FREQ_LIST[freq_ids[1]], play_time, play_time)
+            freq_player.play(
+                FREQ_LIST[freq_ids[0]], FREQ_LIST[freq_ids[1]], play_time, play_time
+            )
 
         return (
             [str(fr) for fr in freq_ids]
@@ -419,7 +412,7 @@ def set_freq_2_by_num(value):
     running=[(Output("freq-play", "disabled"), True, False)],
 )
 def play_sound(n_clicks, freq_1, freq_2, time_1, time_2):
-    freq_lst, full_wave = play(
+    freq_lst, full_wave = freq_player.play(
         freq_1, freq_2, int(time_1), int(time_2), return_vals=True
     )
     sleep(int(time_1) / 1000 + int(time_2) / 1000)
