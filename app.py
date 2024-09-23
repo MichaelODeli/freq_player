@@ -8,9 +8,8 @@ from dash import Input, Output, State, ctx, dcc, html, no_update
 from dash.exceptions import PreventUpdate
 from dash_iconify import DashIconify
 
-import freq_drawer
-import freq_maker
-import styles
+import views.styles as styles
+from models import freq_drawer, freq_maker
 from views import fields
 
 dash._dash_renderer._set_react_version("18.2.0")
