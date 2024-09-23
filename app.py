@@ -4,12 +4,13 @@ import dash
 import dash_mantine_components as dmc
 import flask
 import plotly.graph_objects as go
-from dash import Input, Output, State, dcc, html, no_update
+from dash import Input, Output, State, ctx, dcc, html, no_update
+from dash.exceptions import PreventUpdate
 from dash_iconify import DashIconify
 
-import styles
-import freq_maker
 import freq_drawer
+import freq_maker
+import styles
 
 dash._dash_renderer._set_react_version("18.2.0")
 
@@ -30,7 +31,7 @@ app = dash.Dash(
     suppress_callback_exceptions=True,
 )
 
-freq_list = {
+FREQ_LIST = {
     # 'Не указано': None,
     2: 1071,
     6: 1207,
@@ -46,10 +47,21 @@ freq_list = {
     38: 2295,
 }
 
+PHONE_PLAY_TIME = 1000
+CANCEL_CONTROL_TIME = 250
+LISTEN_SEND_TIME = 100
+
+
+def play(freq_1, freq_2, time_1, time_2):
+    freq_lst = [[freq_1, time_1 / 1000], [freq_2, time_2 / 1000]]
+    full_wave = freq_maker.generate_tone(freq_lst)
+    threading.Thread(target=freq_maker.play_tone, args=([full_wave])).start()
+
 
 # Конструкция всего макета
 app.layout = dmc.MantineProvider(
     children=[
+        dcc.Store(id="freq-play-mode"),
         dmc.AppShell(
             [
                 dmc.AppShellNavbar(
@@ -87,7 +99,7 @@ app.layout = dmc.MantineProvider(
                                     dmc.NavLink(
                                         label='Режим "Прием"',
                                         description="Отпустить тангенту",
-                                        id="freq-priem",
+                                        id="freq-rx",
                                         leftSection=get_icon(
                                             icon="material-symbols:call-received"
                                         ),
@@ -95,22 +107,29 @@ app.layout = dmc.MantineProvider(
                                     dmc.NavLink(
                                         label='Режим "Передача"',
                                         description="Нажать тангенту",
-                                        id="freq-pered",
+                                        id="freq-tx",
                                         leftSection=get_icon(
                                             icon="material-symbols:call-made"
                                         ),
                                     ),
-                                    dmc.NavLink(
-                                        label='Вызов "ЛОК"',
-                                        id="freq-call-loc",
-                                        leftSection=get_icon(
-                                            icon="solar:call-cancel-outline"
-                                        ),
-                                        disabled=True,
-                                    ),
+                                    # dmc.NavLink(
+                                    #     label='Режим разговора',
+                                    #     id="freq-speak-mode",
+                                    #     leftSection=get_icon(
+                                    #         icon="material-symbols:call-made"
+                                    #     ),
+                                    # ),
+                                    # dmc.NavLink(
+                                    #     label='Вызов "ЛОК"',
+                                    #     id="freq-call-loc",
+                                    #     leftSection=get_icon(
+                                    #         icon="solar:call-cancel-outline"
+                                    #     ),
+                                    #     disabled=True,
+                                    # ),
                                     dmc.NavLink(
                                         label="Отбой",
-                                        id="freq-otboy",
+                                        id="freq-cancel",
                                         leftSection=get_icon(
                                             icon="solar:call-cancel-outline"
                                         ),
@@ -136,7 +155,7 @@ app.layout = dmc.MantineProvider(
                                         [
                                             dmc.Select(
                                                 label="Номер частоты 1",
-                                                data=[str(i) for i in freq_list.keys()],
+                                                data=[str(i) for i in FREQ_LIST.keys()],
                                                 w=150,
                                                 id="freq-select-1",
                                                 clearable=True,
@@ -154,7 +173,7 @@ app.layout = dmc.MantineProvider(
                                         [
                                             dmc.Select(
                                                 label="Номер частоты 2",
-                                                data=[str(i) for i in freq_list.keys()],
+                                                data=[str(i) for i in FREQ_LIST.keys()],
                                                 w=150,
                                                 id="freq-select-2",
                                                 clearable=True,
@@ -170,15 +189,14 @@ app.layout = dmc.MantineProvider(
                                     dmc.Switch(
                                         size="md",
                                         radius="lg",
-                                        label="Автовоспроизведение частоты при нажатии параметра",
+                                        label="Автовоспроизведение",
                                         checked=False,
                                         id="freq-autoplay",
-                                        disabled=True,
                                     ),
                                     dmc.Button(
                                         "Воспроизвести", id="freq-play", fullWidth=True
                                     ),
-                                    html.Div(id="play-results"),
+                                    dmc.Group(id="freq-speak-modes"),
                                 ],
                                 px="sm",
                                 pt="sm",
@@ -210,61 +228,49 @@ app.layout = dmc.MantineProvider(
 
 
 @app.callback(
+    Output("freq-select-1", "value", allow_duplicate=True),
+    Output("freq-select-2", "value", allow_duplicate=True),
     Output("time-1", "value", allow_duplicate=True),
     Output("time-2", "value", allow_duplicate=True),
+    Output("play-results", "children", allow_duplicate=True),
+    Input("freq-clear", "n_clicks"),
     Input("freq-phone-set_time", "n_clicks"),
-    prevent_initial_call=True,
-)
-def set_freq_phone(n_clicks):
-    return ["1000"] * 2 if n_clicks is not None else [no_update] * 2
-
-
-@app.callback(
-    Output("freq-select-1", "value", allow_duplicate=True),
-    Output("freq-select-2", "value", allow_duplicate=True),
-    Output("time-1", "value", allow_duplicate=True),
-    Output("time-2", "value", allow_duplicate=True),
-    Input("freq-otboy", "n_clicks"),
-    prevent_initial_call=True,
-)
-def set_freq_otboy(n_clicks):
-    return ["2", "6", "250", "250"] if n_clicks is not None else [no_update] * 4
-
-
-@app.callback(
-    Output("freq-select-1", "value", allow_duplicate=True),
-    Output("freq-select-2", "value", allow_duplicate=True),
-    Output("time-1", "value", allow_duplicate=True),
-    Output("time-2", "value", allow_duplicate=True),
+    Input("freq-cancel", "n_clicks"),
     Input("freq-control", "n_clicks"),
+    Input("freq-rx", "n_clicks"),
+    Input("freq-tx", "n_clicks"),
+    State("freq-autoplay", "checked"),
     prevent_initial_call=True,
 )
-def set_freq_control(n_clicks):
-    return ["6", "2", "250", "250"] if n_clicks is not None else [no_update] * 4
+def set_specify_freq(n0, n1, n2, n3, n4, n5, autoplay):
+    func_name = ctx.triggered_id
 
+    # special functions
+    if func_name == "freq-phone-set_time":
+        return [no_update] * 2 + [str(PHONE_PLAY_TIME)] * 2 + [no_update]
+    if func_name == "freq-clear":
+        return [None] * 2 + [""] * 2 + [None]
 
-@app.callback(
-    Output("freq-select-1", "value", allow_duplicate=True),
-    Output("freq-select-2", "value", allow_duplicate=True),
-    Output("time-1", "value", allow_duplicate=True),
-    Output("time-2", "value", allow_duplicate=True),
-    Input("freq-priem", "n_clicks"),
-    prevent_initial_call=True,
-)
-def set_freq_listen(n_clicks):
-    return ["38", "36", "100", "100"] if n_clicks is not None else [no_update] * 4
+    # set specify freq
+    if func_name == "freq-cancel":
+        freq_ids = [2, 6]
+        play_time = CANCEL_CONTROL_TIME
+    elif func_name == "freq-control":
+        freq_ids = [6, 2]
+        play_time = CANCEL_CONTROL_TIME
+    elif func_name == "freq-rx":
+        freq_ids = [38, 36]
+        play_time = LISTEN_SEND_TIME
+    elif func_name == "freq-tx":
+        freq_ids = [36, 38]
+        play_time = LISTEN_SEND_TIME
+    else:
+        raise PreventUpdate
 
+    if autoplay:
+        play(FREQ_LIST[freq_ids[0]], FREQ_LIST[freq_ids[1]], play_time, play_time)
 
-@app.callback(
-    Output("freq-select-1", "value", allow_duplicate=True),
-    Output("freq-select-2", "value", allow_duplicate=True),
-    Output("time-1", "value", allow_duplicate=True),
-    Output("time-2", "value", allow_duplicate=True),
-    Input("freq-pered", "n_clicks"),
-    prevent_initial_call=True,
-)
-def set_freq_send(n_clicks):
-    return ["36", "38", "100", "100"] if n_clicks is not None else [no_update] * 4
+    return [str(fr) for fr in freq_ids] + [str(play_time)] * 2 + [no_update]
 
 
 @app.callback(
@@ -273,7 +279,7 @@ def set_freq_send(n_clicks):
     prevent_initial_call=True,
 )
 def set_freq_1_by_num(value):
-    return freq_list[int(value)] if value not in [None, "", 0] else no_update
+    return FREQ_LIST[int(value)] if value not in [None, "", 0] else ""
 
 
 @app.callback(
@@ -282,22 +288,7 @@ def set_freq_1_by_num(value):
     prevent_initial_call=True,
 )
 def set_freq_2_by_num(value):
-    return freq_list[int(value)] if value not in [None, "", 0] else no_update
-
-
-@app.callback(
-    Output("freq-select-1", "value"),
-    Output("freq-select-2", "value"),
-    Output("play-results", "children", allow_duplicate=True),
-    Output("freq-1", "value"),
-    Output("freq-2", "value"),
-    Output("time-1", "value"),
-    Output("time-2", "value"),
-    Input("freq-clear", "n_clicks"),
-    prevent_initial_call=True,
-)
-def clear_values(n_clicks):
-    return [None] * 3 + [""] * 4
+    return FREQ_LIST[int(value)] if value not in [None, "", 0] else ""
 
 
 @app.callback(
@@ -310,11 +301,7 @@ def clear_values(n_clicks):
     prevent_initial_call=True,
 )
 def play_sound(n_clicks, freq_1, freq_2, time_1, time_2):
-    time_1 = int(time_1) / 1000
-    time_2 = int(time_2) / 1000
-
-    freq_lst = [[freq_1, time_1], [freq_2, time_2]]
-
+    freq_lst = [[freq_1, int(time_1) / 1000], [freq_2, int(time_2) / 1000]]
     full_wave = freq_maker.generate_tone(freq_lst)
     threading.Thread(target=freq_maker.play_tone, args=([full_wave])).start()
 
