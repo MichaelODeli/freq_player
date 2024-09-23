@@ -1,9 +1,9 @@
 import threading
+from time import sleep
 
 import dash
 import dash_mantine_components as dmc
 import flask
-import plotly.graph_objects as go
 from dash import Input, Output, State, ctx, dcc, html, no_update
 from dash.exceptions import PreventUpdate
 from dash_iconify import DashIconify
@@ -24,7 +24,6 @@ server = flask.Flask("PlaySound")
 app = dash.Dash(
     "PlaySound",
     server=server,
-    # use_pages=True,
     external_stylesheets=styles.STYLESHEETS,
     title="PlaySound",
     update_title="PlaySound 🔃",
@@ -32,7 +31,6 @@ app = dash.Dash(
 )
 
 FREQ_LIST = {
-    # 'Не указано': None,
     2: 1071,
     6: 1207,
     7: 1241,
@@ -52,10 +50,13 @@ CANCEL_CONTROL_TIME = 250
 LISTEN_SEND_TIME = 100
 
 
-def play(freq_1, freq_2, time_1, time_2):
+def play(freq_1, freq_2, time_1, time_2, return_vals=False):
     freq_lst = [[freq_1, time_1 / 1000], [freq_2, time_2 / 1000]]
     full_wave = freq_maker.generate_tone(freq_lst)
     threading.Thread(target=freq_maker.play_tone, args=([full_wave])).start()
+
+    if return_vals:
+        return freq_lst, full_wave
 
 
 # Конструкция всего макета
@@ -97,28 +98,12 @@ app.layout = dmc.MantineProvider(
                                 opened=True,
                                 children=[
                                     dmc.NavLink(
-                                        label='Режим "Прием"',
-                                        description="Отпустить тангенту",
-                                        id="freq-rx",
+                                        label="Режим разговора",
+                                        id="freq-speak-mode",
                                         leftSection=get_icon(
-                                            icon="material-symbols:call-received"
+                                            icon="material-symbols:call"
                                         ),
                                     ),
-                                    dmc.NavLink(
-                                        label='Режим "Передача"',
-                                        description="Нажать тангенту",
-                                        id="freq-tx",
-                                        leftSection=get_icon(
-                                            icon="material-symbols:call-made"
-                                        ),
-                                    ),
-                                    # dmc.NavLink(
-                                    #     label='Режим разговора',
-                                    #     id="freq-speak-mode",
-                                    #     leftSection=get_icon(
-                                    #         icon="material-symbols:call-made"
-                                    #     ),
-                                    # ),
                                     # dmc.NavLink(
                                     #     label='Вызов "ЛОК"',
                                     #     id="freq-call-loc",
@@ -196,7 +181,21 @@ app.layout = dmc.MantineProvider(
                                     dmc.Button(
                                         "Воспроизвести", id="freq-play", fullWidth=True
                                     ),
-                                    dmc.Group(id="freq-speak-modes"),
+                                    dmc.Group(
+                                        id="freq-speak-modes",
+                                        children=[
+                                            dmc.Button(
+                                                "Нажать тангенту", id="freq-tx", w="40%"
+                                            ),
+                                            dmc.Button(
+                                                "Отпустить тангенту",
+                                                id="freq-rx",
+                                                w="40%",
+                                            ),
+                                        ],
+                                        display="none",
+                                        justify="space-between",
+                                    ),
                                 ],
                                 px="sm",
                                 pt="sm",
@@ -233,6 +232,11 @@ app.layout = dmc.MantineProvider(
     Output("time-1", "value", allow_duplicate=True),
     Output("time-2", "value", allow_duplicate=True),
     Output("play-results", "children", allow_duplicate=True),
+    Output("freq-speak-modes", "display"),
+    Output("freq-rx", "disabled"),
+    Output("freq-tx", "disabled"),
+    Output("freq-play", "disabled"),
+    Input("freq-speak-mode", "n_clicks"),
     Input("freq-clear", "n_clicks"),
     Input("freq-phone-set_time", "n_clicks"),
     Input("freq-cancel", "n_clicks"),
@@ -242,35 +246,88 @@ app.layout = dmc.MantineProvider(
     State("freq-autoplay", "checked"),
     prevent_initial_call=True,
 )
-def set_specify_freq(n0, n1, n2, n3, n4, n5, autoplay):
+def set_specify_freq(n0, n1, n2, n3, n4, n5, n6, autoplay):
     func_name = ctx.triggered_id
+    speak_modes_display = "none"
+    rx_button_disabled = False
+    tx_button_disabled = False
+    play_button_disabled = False
 
     # special functions
     if func_name == "freq-phone-set_time":
-        return [no_update] * 2 + [str(PHONE_PLAY_TIME)] * 2 + [no_update]
+        return (
+            [no_update] * 2
+            + [str(PHONE_PLAY_TIME)] * 2
+            + [
+                no_update,
+                speak_modes_display,
+                rx_button_disabled,
+                tx_button_disabled,
+                play_button_disabled,
+            ]
+        )
     if func_name == "freq-clear":
-        return [None] * 2 + [""] * 2 + [None]
-
-    # set specify freq
-    if func_name == "freq-cancel":
-        freq_ids = [2, 6]
-        play_time = CANCEL_CONTROL_TIME
-    elif func_name == "freq-control":
-        freq_ids = [6, 2]
-        play_time = CANCEL_CONTROL_TIME
-    elif func_name == "freq-rx":
-        freq_ids = [38, 36]
-        play_time = LISTEN_SEND_TIME
-    elif func_name == "freq-tx":
-        freq_ids = [36, 38]
-        play_time = LISTEN_SEND_TIME
+        return (
+            [None] * 2
+            + [""] * 2
+            + [
+                None,
+                speak_modes_display,
+                rx_button_disabled,
+                tx_button_disabled,
+                play_button_disabled,
+            ]
+        )
+    if func_name == "freq-speak-mode":
+        speak_modes_display = None
+        return (
+            [None] * 2
+            + [""] * 2
+            + [
+                None,
+                speak_modes_display,
+                not rx_button_disabled,
+                tx_button_disabled,
+                not play_button_disabled,
+            ]
+        )
     else:
-        raise PreventUpdate
+        # set specify freq
+        if func_name == "freq-cancel":
+            freq_ids = [2, 6]
+            play_time = CANCEL_CONTROL_TIME
+        elif func_name == "freq-control":
+            freq_ids = [6, 2]
+            play_time = CANCEL_CONTROL_TIME
+        elif func_name == "freq-rx":
+            rx_button_disabled = not rx_button_disabled
+            play_button_disabled = not play_button_disabled
+            speak_modes_display = None
+            freq_ids = [38, 36]
+            play_time = LISTEN_SEND_TIME
+        elif func_name == "freq-tx":
+            tx_button_disabled = not tx_button_disabled
+            play_button_disabled = not play_button_disabled
+            speak_modes_display = None
+            freq_ids = [36, 38]
+            play_time = LISTEN_SEND_TIME
+        else:
+            raise PreventUpdate
 
-    if autoplay:
-        play(FREQ_LIST[freq_ids[0]], FREQ_LIST[freq_ids[1]], play_time, play_time)
+        if autoplay:
+            play(FREQ_LIST[freq_ids[0]], FREQ_LIST[freq_ids[1]], play_time, play_time)
 
-    return [str(fr) for fr in freq_ids] + [str(play_time)] * 2 + [no_update]
+        return (
+            [str(fr) for fr in freq_ids]
+            + [str(play_time)] * 2
+            + [
+                no_update,
+                speak_modes_display,
+                rx_button_disabled,
+                tx_button_disabled,
+                play_button_disabled,
+            ]
+        )
 
 
 @app.callback(
@@ -299,12 +356,13 @@ def set_freq_2_by_num(value):
     State("time-1", "value"),
     State("time-2", "value"),
     prevent_initial_call=True,
+    running=[(Output("freq-play", "disabled"), True, False)],
 )
 def play_sound(n_clicks, freq_1, freq_2, time_1, time_2):
-    freq_lst = [[freq_1, int(time_1) / 1000], [freq_2, int(time_2) / 1000]]
-    full_wave = freq_maker.generate_tone(freq_lst)
-    threading.Thread(target=freq_maker.play_tone, args=([full_wave])).start()
-
+    freq_lst, full_wave = play(
+        freq_1, freq_2, int(time_1), int(time_2), return_vals=True
+    )
+    sleep(int(time_1) / 1000 + int(time_2) / 1000)
     fig = freq_drawer.get_fig(freq_lst, full_wave)
 
     return dcc.Graph(figure=fig)
