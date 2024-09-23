@@ -51,47 +51,81 @@ app.layout = dmc.MantineProvider(
         dmc.AppShell(
             [
                 dmc.AppShellNavbar(
-                    children=dmc.Stack(
+                    children=html.Div(
                         [
                             dmc.NavLink(
-                                label="Очистить частоты",
-                                id="freq-clear",
-                                leftSection=get_icon(icon="mdi:clear"),
+                                label="Основные операции",
+                                opened=True,
+                                children=[
+                                    dmc.NavLink(
+                                        label="Очистить",
+                                        id="freq-clear",
+                                        leftSection=get_icon(icon="mdi:clear"),
+                                    ),
+                                ],
                             ),
                             dmc.NavLink(
-                                label='Режим "Прием"',
-                                description="Отпустить тангенту",
-                                id="freq-priem",
-                                leftSection=get_icon(
-                                    icon="material-symbols:call-received"
-                                ),
+                                label="Работа с телефоном",
+                                opened=True,
+                                children=[
+                                    dmc.NavLink(
+                                        label="Настроить время",
+                                        description="Время подачи - 1 с",
+                                        id="freq-phone-set_time",
+                                        leftSection=get_icon(
+                                            icon="mdi:clock-time-two-outline"
+                                        ),
+                                    ),
+                                ],
                             ),
                             dmc.NavLink(
-                                label='Режим "Передача"',
-                                description="Нажать тангенту",
-                                id="freq-pered",
-                                leftSection=get_icon(icon="material-symbols:call-made"),
-                            ),
-                            dmc.NavLink(
-                                label='Вызов "ЛОК"',
-                                id="freq-call-loc",
-                                leftSection=get_icon(icon="solar:call-cancel-outline"),
-                                disabled=True,
-                            ),
-                            dmc.NavLink(
-                                label="Отбой",
-                                id="freq-otboy",
-                                leftSection=get_icon(icon="solar:call-cancel-outline"),
-                            ),
-                            dmc.NavLink(
-                                label="Контроль",
-                                id="freq-control",
-                                leftSection=get_icon(icon="mdi:user-access-control"),
+                                label="Работа с РС-46МЦ",
+                                opened=True,
+                                children=[
+                                    dmc.NavLink(
+                                        label='Режим "Прием"',
+                                        description="Отпустить тангенту",
+                                        id="freq-priem",
+                                        leftSection=get_icon(
+                                            icon="material-symbols:call-received"
+                                        ),
+                                    ),
+                                    dmc.NavLink(
+                                        label='Режим "Передача"',
+                                        description="Нажать тангенту",
+                                        id="freq-pered",
+                                        leftSection=get_icon(
+                                            icon="material-symbols:call-made"
+                                        ),
+                                    ),
+                                    dmc.NavLink(
+                                        label='Вызов "ЛОК"',
+                                        id="freq-call-loc",
+                                        leftSection=get_icon(
+                                            icon="solar:call-cancel-outline"
+                                        ),
+                                        disabled=True,
+                                    ),
+                                    dmc.NavLink(
+                                        label="Отбой",
+                                        id="freq-otboy",
+                                        leftSection=get_icon(
+                                            icon="solar:call-cancel-outline"
+                                        ),
+                                    ),
+                                    dmc.NavLink(
+                                        label="Контроль",
+                                        id="freq-control",
+                                        leftSection=get_icon(
+                                            icon="mdi:user-access-control"
+                                        ),
+                                    ),
+                                ],
                             ),
                         ],
-                        align="center",
-                        pt="sm",
-                        gap=0,
+                        # align="center",
+                        # pt="sm",
+                        # gap=0,
                     ),
                 ),
                 dmc.AppShellMain(
@@ -147,7 +181,7 @@ app.layout = dmc.MantineProvider(
                 ),
             ],
             navbar={
-                "width": 230,
+                "width": 250,
                 "breakpoint": "sm",
                 "collapsed": {"mobile": True},
             },
@@ -168,83 +202,81 @@ app.layout = dmc.MantineProvider(
 @app.callback(
     Output("freq-select-1", "value", allow_duplicate=True),
     Output("freq-select-2", "value", allow_duplicate=True),
+    Output("time-1", "value", allow_duplicate=True),
+    Output("time-2", "value", allow_duplicate=True),
     Input("freq-otboy", "n_clicks"),
     prevent_initial_call=True,
 )
 def set_freq_otboy(n_clicks):
-    return ["2", "6"] if n_clicks is not None else [no_update, no_update]
+    return ["2", "6", "250", "250"] if n_clicks is not None else [no_update] * 4
 
 
 @app.callback(
     Output("freq-select-1", "value", allow_duplicate=True),
     Output("freq-select-2", "value", allow_duplicate=True),
+    Output("time-1", "value", allow_duplicate=True),
+    Output("time-2", "value", allow_duplicate=True),
     Input("freq-control", "n_clicks"),
     prevent_initial_call=True,
 )
 def set_freq_control(n_clicks):
-    return ["6", "2"] if n_clicks is not None else [no_update, no_update]
+    return ["6", "2", "250", "250"] if n_clicks is not None else [no_update] * 4
 
 
 @app.callback(
-    Output("freq-1", "value", allow_duplicate=True),
+    Output("freq-select-1", "value", allow_duplicate=True),
+    Output("freq-select-2", "value", allow_duplicate=True),
     Output("time-1", "value", allow_duplicate=True),
-    Output("freq-2", "value", allow_duplicate=True),
     Output("time-2", "value", allow_duplicate=True),
     Input("freq-priem", "n_clicks"),
     prevent_initial_call=True,
 )
 def set_freq_listen(n_clicks):
-    return (
-        [freq_list[38], 200, freq_list[36], 200] if n_clicks is not None else [""] * 4
-    )
+    return ["38", "36", "100", "100"] if n_clicks is not None else [no_update] * 4
 
 
 @app.callback(
-    Output("freq-1", "value", allow_duplicate=True),
+    Output("freq-select-1", "value", allow_duplicate=True),
+    Output("freq-select-2", "value", allow_duplicate=True),
     Output("time-1", "value", allow_duplicate=True),
-    Output("freq-2", "value", allow_duplicate=True),
     Output("time-2", "value", allow_duplicate=True),
     Input("freq-pered", "n_clicks"),
     prevent_initial_call=True,
 )
 def set_freq_send(n_clicks):
-    return (
-        [freq_list[36], 200, freq_list[38], 200] if n_clicks is not None else [""] * 4
-    )
+    return ["36", "38", "100", "100"] if n_clicks is not None else [no_update] * 4
 
 
 @app.callback(
     Output("freq-1", "value", allow_duplicate=True),
-    Output("time-1", "value", allow_duplicate=True),
     Input("freq-select-1", "value"),
     prevent_initial_call=True,
 )
 def set_freq_1_by_num(value):
-    return [freq_list[int(value)], 1000] if value not in [None, "", 0] else ["", ""]
+    return freq_list[int(value)] if value not in [None, "", 0] else no_update
 
 
 @app.callback(
     Output("freq-2", "value", allow_duplicate=True),
-    Output("time-2", "value", allow_duplicate=True),
     Input("freq-select-2", "value"),
     prevent_initial_call=True,
 )
 def set_freq_2_by_num(value):
-    return [freq_list[int(value)], 1000] if value not in [None, "", 0] else ["", ""]
+    return freq_list[int(value)] if value not in [None, "", 0] else no_update
 
 
 @app.callback(
-    Output("freq-1", "value"),
-    Output("freq-2", "value"),
     Output("freq-select-1", "value"),
     Output("freq-select-2", "value"),
+    Output("freq-1", "value"),
+    Output("freq-2", "value"),
     Output("time-1", "value"),
     Output("time-2", "value"),
     Input("freq-clear", "n_clicks"),
     prevent_initial_call=True,
 )
 def clear_values(n_clicks):
-    return [None] * 6
+    return [None] * 2 + [""] * 4
 
 
 @app.callback(
@@ -257,8 +289,8 @@ def clear_values(n_clicks):
     prevent_initial_call=True,
 )
 def play_sound(n_clicks, freq_1, freq_2, time_1, time_2):
-    time_1 = time_1 / 1000
-    time_2 = time_2 / 1000
+    time_1 = int(time_1) / 1000
+    time_2 = int(time_2) / 1000
 
     freq_lst = [[freq_1, time_1], [freq_2, time_2]]
 
