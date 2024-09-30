@@ -54,6 +54,13 @@ def render_freq_buttons():
             checked=True,
             id="freq-autoplay",
         ),
+        dmc.Switch(
+            size="md",
+            radius="lg",
+            label="Подать сигнал модуляции перед передачей",
+            checked=True,
+            id="freq-modulation-play",
+        ),
         dmc.Button(
             "Воспроизвести",
             id="freq-play",

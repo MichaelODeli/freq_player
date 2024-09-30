@@ -1,4 +1,5 @@
-import threading
+import os
+import webbrowser
 from time import sleep
 
 import dash
@@ -136,7 +137,8 @@ app.layout = dmc.MantineProvider(
                                         "Информация по подключению",
                                         icon=get_icon("material-symbols:help-outline"),
                                     ),
-                                    dmc.AccordionPanel("some content"),
+                                    dmc.AccordionPanel("Для подачи сигнала, используйте номера СИП. По умолчанию СИП1 = 1, тогда частоты будут 2 и 7."
+                                                       "Фиолетовый - TIP, синий - SLEEVE"),
                                 ],
                                 value="help",
                             ),
@@ -331,6 +333,9 @@ def set_specify_freq(n0, n1, n2, n3, n4, n5, n6, autoplay):
         )
     if func_name == "freq-speak-mode":
         speak_modes_display = None
+        freq_player.play(
+            1400, 0, 2000, 0
+        )
         return (
             [None] * 2
             + [""] * 2
@@ -408,10 +413,16 @@ def set_freq_2_by_num(value):
     State("freq-2", "value"),
     State("time-1", "value"),
     State("time-2", "value"),
+    State("freq-modulation-play", "checked"),
     prevent_initial_call=True,
     running=[(Output("freq-play", "disabled"), True, False)],
 )
-def play_sound(n_clicks, freq_1, freq_2, time_1, time_2):
+def play_sound(n_clicks, freq_1, freq_2, time_1, time_2, modulation_play):
+    if modulation_play:
+        freq_player.play(
+            1600, 0, 1000, 0
+        )
+
     freq_lst, full_wave = freq_player.play(
         freq_1, freq_2, int(time_1), int(time_2), return_vals=True
     )
@@ -421,9 +432,9 @@ def play_sound(n_clicks, freq_1, freq_2, time_1, time_2):
     return dcc.Graph(figure=fig)
 
 
-# def open_browser():
-#     if not os.environ.get("WERKZEUG_RUN_MAIN"):
-#         webbrowser.open_new("http://localhost:{}".format(81))
+def open_browser():
+    if not os.environ.get("WERKZEUG_RUN_MAIN"):
+        webbrowser.open_new("http://localhost:{}".format(81))
 
 
 dev = True
@@ -436,3 +447,4 @@ if __name__ == "__main__":
         from waitress import serve
 
         serve(app.server, host="0.0.0.0", port=81)
+        open_browser()
