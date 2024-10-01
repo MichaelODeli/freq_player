@@ -159,6 +159,9 @@ app.layout = dmc.MantineProvider(
                                     dmc.AccordionPanel(
                                         dmc.Stack(
                                             [
+                                                fields.render_freq_1_fields(FREQ_LIST),
+                                                fields.render_freq_2_fields(FREQ_LIST),
+                                                fields.render_freq_3_fields(FREQ_LIST),
                                                 dmc.Alert(
                                                     "Вы ввели неверные частоты и/или неверные длительности сигналов. Попробуйте еще раз.",
                                                     title="Ошибка ввода частот",
@@ -167,9 +170,6 @@ app.layout = dmc.MantineProvider(
                                                     color="red",
                                                     duration=3000,
                                                 ),
-                                                fields.render_freq_1_fields(FREQ_LIST),
-                                                fields.render_freq_2_fields(FREQ_LIST),
-                                                fields.render_freq_3_fields(FREQ_LIST),
                                             ]
                                             + fields.render_freq_buttons(),
                                             px="sm",
@@ -268,7 +268,7 @@ def set_specify_freq(n0, n1, n2, n3, n4, n5):
             + [CANCEL_CONTROL_TIME, CANCEL_CONTROL_TIME, ""]
         )
     else:
-        return [None]*4 + [""]*3
+        return [None] * 4 + [""] * 3
 
 
 @app.callback(
