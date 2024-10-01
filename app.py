@@ -44,6 +44,7 @@ FREQ_LIST = {
     20: 1683,
     36: 2227,
     38: 2295,
+    "Частота модуляции": 1600,
 }
 
 PHONE_PLAY_TIME = 1000
@@ -61,14 +62,23 @@ app.layout = dmc.MantineProvider(
                     children=html.Div(
                         [
                             dmc.NavLink(
-                                label="Работа с телефоном",
+                                label="Установка времени",
                                 opened=True,
                                 leftSection=get_icon(icon="material-symbols:call"),
                                 children=[
                                     dmc.NavLink(
-                                        label="Настроить время подачи сигнала",
-                                        description="t = 1 с",
-                                        id="freq-phone-set_time",
+                                        label="Установить t = 1 c",
+                                        description="Для вызова радиостанции и/или телефона",
+                                        id="freq-phone-set_time-1sec",
+                                        leftSection=get_icon(
+                                            icon="mdi:clock-time-two-outline"
+                                        ),
+                                        style={"line-height": "1.3"},
+                                    ),
+                                    dmc.NavLink(
+                                        label="Установить t = 0.25 c",
+                                        description="Для отмены или контоля вызова",
+                                        id="freq-phone-set_time-025sec",
                                         leftSection=get_icon(
                                             icon="mdi:clock-time-two-outline"
                                         ),
@@ -77,26 +87,26 @@ app.layout = dmc.MantineProvider(
                                 ],
                             ),
                             dmc.NavLink(
-                                label="Работа с РС-46МЦ",
+                                label="Установка частот",
                                 opened=True,
                                 leftSection=get_icon(icon="carbon:radio"),
                                 children=[
                                     dmc.NavLink(
-                                        label="Режим разговора",
-                                        id="freq-speak-mode",
+                                        label="Вызов радиостанции",
+                                        description="Устанавливается первая частота из трехчастотной посылки - частота модуляции. "
+                                        "Остальные частоты соответствуют номеру СИП радиостанции.",
+                                        id="freq-set_freq-call_rs",
                                         leftSection=get_icon(
                                             icon="material-symbols:call"
                                         ),
-                                        description='Проверьте, что включен пункт "Автоматическое воспроизведение"',
                                     ),
-                                    # dmc.NavLink(
-                                    #     label='Вызов "ЛОК"',
-                                    #     id="freq-call-loc",
-                                    #     leftSection=get_icon(
-                                    #         icon="solar:call-cancel-outline"
-                                    #     ),
-                                    #     disabled=True,
-                                    # ),
+                                ],
+                            ),
+                            dmc.NavLink(
+                                label="Специальные команды",
+                                opened=True,
+                                leftSection=get_icon(icon="carbon:radio"),
+                                children=[
                                     dmc.NavLink(
                                         label="Отбой",
                                         id="freq-cancel",
@@ -137,8 +147,7 @@ app.layout = dmc.MantineProvider(
                                         "Информация по подключению",
                                         icon=get_icon("material-symbols:help-outline"),
                                     ),
-                                    dmc.AccordionPanel("Для подачи сигнала, используйте номера СИП. По умолчанию СИП1 = 1, тогда частоты будут 2 и 7."
-                                                       "Фиолетовый - TIP, синий - SLEEVE"),
+                                    dmc.AccordionPanel("some text"),
                                 ],
                                 value="help",
                             ),
@@ -150,8 +159,17 @@ app.layout = dmc.MantineProvider(
                                     dmc.AccordionPanel(
                                         dmc.Stack(
                                             [
+                                                dmc.Alert(
+                                                    "Вы ввели неверные частоты и/или неверные длительности сигналов. Попробуйте еще раз.",
+                                                    title="Ошибка ввода частот",
+                                                    hide=True,
+                                                    id="freq-alert",
+                                                    color="red",
+                                                    duration=3000,
+                                                ),
                                                 fields.render_freq_1_fields(FREQ_LIST),
                                                 fields.render_freq_2_fields(FREQ_LIST),
+                                                fields.render_freq_3_fields(FREQ_LIST),
                                             ]
                                             + fields.render_freq_buttons(),
                                             px="sm",
@@ -185,83 +203,10 @@ app.layout = dmc.MantineProvider(
                             ),
                         ],
                     ),
-                    # dmc.Stack(
-                    #     [
-                    #         dmc.Stack(
-                    #             [
-                    #                 dmc.Group(
-                    #                     [
-                    #                         dmc.Select(
-                    #                             label="Номер частоты 1",
-                    #                             data=[str(i) for i in FREQ_LIST.keys()],
-                    #                             w=150,
-                    #                             id="freq-select-1",
-                    #                             clearable=True,
-                    #                         ),
-                    #                         dmc.NumberInput(
-                    #                             label="Частота 1, Гц", id="freq-1"
-                    #                         ),
-                    #                         dmc.NumberInput(
-                    #                             label="Время подачи, мс",
-                    #                             id="time-1",
-                    #                         ),
-                    #                     ]
-                    #                 ),
-                    #                 dmc.Group(
-                    #                     [
-                    #                         dmc.Select(
-                    #                             label="Номер частоты 2",
-                    #                             data=[str(i) for i in FREQ_LIST.keys()],
-                    #                             w=150,
-                    #                             id="freq-select-2",
-                    #                             clearable=True,
-                    #                         ),
-                    #                         dmc.NumberInput(
-                    #                             label="Частота 2, Гц", id="freq-2"
-                    #                         ),
-                    #                         dmc.NumberInput(
-                    #                             label="Время подачи, мс", id="time-2"
-                    #                         ),
-                    #                     ]
-                    #                 ),
-                    #                 dmc.Switch(
-                    #                     size="md",
-                    #                     radius="lg",
-                    #                     label="Автовоспроизведение",
-                    #                     checked=True,
-                    #                     id="freq-autoplay",
-                    #                 ),
-                    #                 dmc.Button(
-                    #                     "Воспроизвести", id="freq-play", fullWidth=True
-                    #                 ),
-                    #                 dmc.Group(
-                    #                     id="freq-speak-modes",
-                    #                     children=[
-                    #                         dmc.Button(
-                    #                             "Нажать тангенту", id="freq-tx", w="40%"
-                    #                         ),
-                    #                         dmc.Button(
-                    #                             "Отпустить тангенту",
-                    #                             id="freq-rx",
-                    #                             w="40%",
-                    #                         ),
-                    #                     ],
-                    #                     display="none",
-                    #                     justify="space-between",
-                    #                 ),
-                    #             ],
-                    #             px="sm",
-                    #             pt="sm",
-                    #             w="max-content",
-                    #             gap="lg",
-                    #         ),
-                    #         html.Div(id="play-results", style={"width": "1500px"}),
-                    #     ]
-                    # ),
                 ),
             ],
             navbar={
-                "width": 250,
+                "width": 350,
                 "breakpoint": "sm",
                 "collapsed": {"mobile": True},
             },
@@ -280,112 +225,50 @@ app.layout = dmc.MantineProvider(
 
 
 @app.callback(
+    Output("play-results", "children", allow_duplicate=True),
     Output("freq-select-1", "value", allow_duplicate=True),
     Output("freq-select-2", "value", allow_duplicate=True),
+    Output("freq-select-3", "value", allow_duplicate=True),
     Output("time-1", "value", allow_duplicate=True),
     Output("time-2", "value", allow_duplicate=True),
-    Output("play-results", "children", allow_duplicate=True),
-    Output("freq-speak-modes", "display"),
-    Output("freq-rx", "disabled"),
-    Output("freq-tx", "disabled"),
-    Output("freq-play", "disabled"),
-    Input("freq-speak-mode", "n_clicks"),
-    Input("freq-clear", "n_clicks"),
-    Input("freq-phone-set_time", "n_clicks"),
+    Output("time-3", "value", allow_duplicate=True),
+    Input("freq-phone-set_time-1sec", "n_clicks"),
+    Input("freq-phone-set_time-025sec", "n_clicks"),
+    Input("freq-set_freq-call_rs", "n_clicks"),
     Input("freq-cancel", "n_clicks"),
     Input("freq-control", "n_clicks"),
-    Input("freq-rx", "n_clicks"),
-    Input("freq-tx", "n_clicks"),
-    State("freq-autoplay", "checked"),
+    Input("freq-clear", "n_clicks"),
     prevent_initial_call=True,
 )
-def set_specify_freq(n0, n1, n2, n3, n4, n5, n6, autoplay):
+def set_specify_freq(n0, n1, n2, n3, n4, n5):
     func_name = ctx.triggered_id
-    speak_modes_display = "none"
-    rx_button_disabled = False
-    tx_button_disabled = False
-    play_button_disabled = False
 
     # special functions
-    if func_name == "freq-phone-set_time":
+    if func_name == "freq-phone-set_time-1sec":
+        return [no_update] + [no_update] * 3 + [PHONE_PLAY_TIME] * 3
+    elif func_name == "freq-phone-set_time-025sec":
+        return [no_update] + [no_update] * 3 + [CANCEL_CONTROL_TIME] * 3
+    elif func_name == "freq-set_freq-call_rs":
         return (
-            [no_update] * 2
-            + [str(PHONE_PLAY_TIME)] * 2
-            + [
-                no_update,
-                speak_modes_display,
-                rx_button_disabled,
-                tx_button_disabled,
-                play_button_disabled,
-            ]
+            [no_update]
+            + ["Частота модуляции"]
+            + [no_update] * 2
+            + [PHONE_PLAY_TIME] * 3
         )
-    if func_name == "freq-clear":
+    elif func_name == "freq-cancel":
         return (
-            [None] * 2
-            + [""] * 2
-            + [
-                None,
-                speak_modes_display,
-                rx_button_disabled,
-                tx_button_disabled,
-                play_button_disabled,
-            ]
+            [no_update]
+            + ["2", "6", None]
+            + [CANCEL_CONTROL_TIME, CANCEL_CONTROL_TIME, ""]
         )
-    if func_name == "freq-speak-mode":
-        speak_modes_display = None
-        freq_player.play(
-            1400, 0, 2000, 0
-        )
+    elif func_name == "freq-control":
         return (
-            [None] * 2
-            + [""] * 2
-            + [
-                None,
-                speak_modes_display,
-                not rx_button_disabled,
-                tx_button_disabled,
-                not play_button_disabled,
-            ]
+            [no_update]
+            + ["6", "2", None]
+            + [CANCEL_CONTROL_TIME, CANCEL_CONTROL_TIME, ""]
         )
     else:
-        # set specify freq
-        if func_name == "freq-cancel":
-            freq_ids = [2, 6]
-            play_time = CANCEL_CONTROL_TIME
-        elif func_name == "freq-control":
-            freq_ids = [6, 2]
-            play_time = CANCEL_CONTROL_TIME
-        elif func_name == "freq-rx":
-            rx_button_disabled = not rx_button_disabled
-            play_button_disabled = not play_button_disabled
-            speak_modes_display = None
-            freq_ids = [38, 36]
-            play_time = LISTEN_SEND_TIME
-        elif func_name == "freq-tx":
-            tx_button_disabled = not tx_button_disabled
-            play_button_disabled = not play_button_disabled
-            speak_modes_display = None
-            freq_ids = [36, 38]
-            play_time = LISTEN_SEND_TIME
-        else:
-            raise PreventUpdate
-
-        if autoplay:
-            freq_player.play(
-                FREQ_LIST[freq_ids[0]], FREQ_LIST[freq_ids[1]], play_time, play_time
-            )
-
-        return (
-            [str(fr) for fr in freq_ids]
-            + [str(play_time)] * 2
-            + [
-                no_update,
-                speak_modes_display,
-                rx_button_disabled,
-                tx_button_disabled,
-                play_button_disabled,
-            ]
-        )
+        return [None]*4 + [""]*3
 
 
 @app.callback(
@@ -394,7 +277,11 @@ def set_specify_freq(n0, n1, n2, n3, n4, n5, n6, autoplay):
     prevent_initial_call=True,
 )
 def set_freq_1_by_num(value):
-    return FREQ_LIST[int(value)] if value not in [None, "", 0] else ""
+    try:
+        value = int(value)
+    except Exception:
+        pass
+    return FREQ_LIST[value] if value not in [None, "", 0] else ""
 
 
 @app.callback(
@@ -403,33 +290,72 @@ def set_freq_1_by_num(value):
     prevent_initial_call=True,
 )
 def set_freq_2_by_num(value):
-    return FREQ_LIST[int(value)] if value not in [None, "", 0] else ""
+    try:
+        value = int(value)
+    except Exception:
+        pass
+    return FREQ_LIST[value] if value not in [None, "", 0] else ""
+
+
+@app.callback(
+    Output("freq-3", "value", allow_duplicate=True),
+    Input("freq-select-3", "value"),
+    prevent_initial_call=True,
+)
+def set_freq_3_by_num(value):
+    try:
+        value = int(value)
+    except Exception:
+        pass
+    return FREQ_LIST[value] if value not in [None, "", 0] else ""
 
 
 @app.callback(
     Output("play-results", "children"),
+    Output("freq-alert", "hide"),
     Input("freq-play", "n_clicks"),
     State("freq-1", "value"),
     State("freq-2", "value"),
+    State("freq-3", "value"),
     State("time-1", "value"),
     State("time-2", "value"),
-    State("freq-modulation-play", "checked"),
+    State("time-3", "value"),
     prevent_initial_call=True,
     running=[(Output("freq-play", "disabled"), True, False)],
 )
-def play_sound(n_clicks, freq_1, freq_2, time_1, time_2, modulation_play):
-    if modulation_play:
-        freq_player.play(
-            1600, 0, 1000, 0
+def play_sound(n_clicks, freq_1, freq_2, freq_3, time_1, time_2, time_3):
+    if (
+        None in [freq_1, freq_2, time_1, time_2]
+        or "" in [freq_1, freq_2, time_1, time_2]
+        or (freq_3 not in [None, ""] and time_3 in [None, ""])
+        or freq_1 > 8000
+        or freq_2 > 8000
+        or time_1 > 60000
+        or time_2 > 60000
+    ):
+        return (None, False)
+    elif freq_3 not in [None, ""]:
+        if freq_3 < 8000 and time_3 < 60000:
+            freq_lst, full_wave = freq_player.play_3(
+                freq_1,
+                freq_2,
+                freq_3,
+                int(time_1),
+                int(time_2),
+                int(time_3),
+                return_vals=True,
+            )
+            sleep(int(time_1) / 1000 + int(time_2) / 1000 + int(time_3) / 1000)
+        else:
+            return (None, False)
+    else:
+        freq_lst, full_wave = freq_player.play_2(
+            freq_1, freq_2, int(time_1), int(time_2), return_vals=True
         )
-
-    freq_lst, full_wave = freq_player.play(
-        freq_1, freq_2, int(time_1), int(time_2), return_vals=True
-    )
-    sleep(int(time_1) / 1000 + int(time_2) / 1000)
+        sleep(int(time_1) / 1000 + int(time_2) / 1000)
     fig = freq_drawer.get_fig(freq_lst, full_wave)
 
-    return dcc.Graph(figure=fig)
+    return dcc.Graph(figure=fig), True
 
 
 def open_browser():

@@ -7,7 +7,7 @@ def render_freq_1_fields(freq_list):
             dmc.Select(
                 label="Номер частоты 1",
                 data=[str(i) for i in freq_list.keys()],
-                w=150,
+                w=250,
                 id="freq-select-1",
                 clearable=True,
             ),
@@ -29,7 +29,7 @@ def render_freq_2_fields(freq_list):
             dmc.Select(
                 label="Номер частоты 2",
                 data=[str(i) for i in freq_list.keys()],
-                w=150,
+                w=250,
                 id="freq-select-2",
                 clearable=True,
             ),
@@ -44,43 +44,33 @@ def render_freq_2_fields(freq_list):
         ]
     )
 
+def render_freq_3_fields(freq_list):
+    return dmc.Group(
+        [
+            dmc.Select(
+                label="Номер частоты 3",
+                data=[str(i) for i in freq_list.keys()],
+                w=250,
+                id="freq-select-3",
+                clearable=True,
+            ),
+            dmc.NumberInput(
+                label="Частота 3, Гц",
+                id="freq-3",
+            ),
+            dmc.NumberInput(
+                label="Время подачи, мс",
+                id="time-3",
+            ),
+        ]
+    )
+
 
 def render_freq_buttons():
     return [
-        dmc.Switch(
-            size="md",
-            radius="lg",
-            label="Автовоспроизведение",
-            checked=True,
-            id="freq-autoplay",
-        ),
-        dmc.Switch(
-            size="md",
-            radius="lg",
-            label="Подать сигнал модуляции перед передачей",
-            checked=True,
-            id="freq-modulation-play",
-        ),
         dmc.Button(
             "Воспроизвести",
             id="freq-play",
             fullWidth=True,
-        ),
-        dmc.Group(
-            id="freq-speak-modes",
-            children=[
-                dmc.Button(
-                    "Нажать тангенту",
-                    id="freq-tx",
-                    w="40%",
-                ),
-                dmc.Button(
-                    "Отпустить тангенту",
-                    id="freq-rx",
-                    w="40%",
-                ),
-            ],
-            display="none",
-            justify="space-between",
         ),
     ]
