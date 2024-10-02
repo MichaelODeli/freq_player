@@ -2,10 +2,20 @@
 
 
 a = Analysis(
-    ["app.py", "controllers/freq_drawer.py", "controllers/freq_maker.py", "controllers/freq_player.py", "views/fields.py", "views/styles.py"],
+    [
+        "app.py",
+        "controllers/freq_drawer.py",
+        "controllers/freq_maker.py",
+        "controllers/freq_player.py",
+        "views/fields.py",
+        "views/styles.py",
+    ],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[
+        ("C:/venv_collection/.university/Lib/site-packages/dash_iconify", "dash_iconify"),
+        ("C:/venv_collection/.university/Lib/site-packages/dash_mantine_components", "dash_mantine_components"),
+    ],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -21,7 +31,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='app',
+    name="app",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -40,5 +50,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='app',
+    name="app",
 )

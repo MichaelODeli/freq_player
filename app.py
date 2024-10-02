@@ -363,7 +363,7 @@ def open_browser():
         webbrowser.open_new("http://localhost:{}".format(81))
 
 
-dev = True
+dev = not True
 
 if __name__ == "__main__":
     # Timer(1, open_browser).start()
@@ -371,6 +371,6 @@ if __name__ == "__main__":
         app.run(debug=True, host="0.0.0.0", port=81)
     else:
         from waitress import serve
-
-        serve(app.server, host="0.0.0.0", port=81)
         open_browser()
+        serve(app.server, host="0.0.0.0", port=81)
+        

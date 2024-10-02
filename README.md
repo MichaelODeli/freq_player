@@ -9,7 +9,7 @@ Play custom frequencies
 - Install requirements 
 `pip install -r requirements.txt`
 - Build exe
-`pyinstaller app.py --clean  --onedir`
+`pyinstaller app.spec`
 
 ## Run app native
 - Setup venv
